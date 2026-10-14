@@ -46,15 +46,20 @@ if (!function_exists('env')) {
     }
 }
 
+// Deteksi lingkungan Serverless (Vercel)
+$isVercel = !empty($_ENV['VERCEL']) || !empty(getenv('VERCEL')) || !empty($_SERVER['VERCEL']);
+$defaultDbPath = $isVercel ? '/tmp/app.sqlite' : dirname(__DIR__) . '/database/app.sqlite';
+$defaultUploadDir = $isVercel ? '/tmp/uploads' : dirname(__DIR__) . '/public/uploads';
+
 define('APP_NAME', env('APP_NAME', 'ERP Inventarisasi Reputasi Institusi'));
-define('APP_ENV', env('APP_ENV', 'production'));
-define('APP_DEBUG', filter_var(env('APP_DEBUG', false), FILTER_VALIDATE_BOOLEAN));
+define('APP_ENV', env('APP_ENV', $isVercel ? 'production' : 'local'));
+define('APP_DEBUG', filter_var(env('APP_DEBUG', !$isVercel), FILTER_VALIDATE_BOOLEAN));
 define('APP_URL', env('APP_URL', 'http://localhost:8088'));
 define('APP_INSTITUTION', env('APP_INSTITUTION', 'Universitas Harkat Negeri'));
 define('APP_TASKFORCE', env('APP_TASKFORCE', 'Tim Task Force Kerjasama Internasional & Reputasi Institusi'));
 define('APP_ROOT', dirname(__DIR__));
-define('DB_PATH', env('DB_PATH', APP_ROOT . '/database/app.sqlite'));
-define('UPLOAD_DIR', env('UPLOAD_DIR', APP_ROOT . '/public/uploads'));
+define('DB_PATH', env('DB_PATH', $defaultDbPath));
+define('UPLOAD_DIR', env('UPLOAD_DIR', $defaultUploadDir));
 define('MAX_UPLOAD_SIZE', (int)env('MAX_UPLOAD_SIZE', 10 * 1024 * 1024)); // 10 Megabytes
 
 // Konfigurasi Teknologi AI (Google Gemini API & UHN Neural Synthesizer)
