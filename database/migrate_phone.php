@@ -17,10 +17,14 @@ if (!in_array('phone', $cols)) {
 $phoneUpdates = [
     'pic_ppm' => '6281234567801',
     'pic_psdm' => '6281234567802',
+    'pic_mhs' => '6281234567803',
     'pic_kemhs' => '6281234567803',
     'pic_alumni' => '6281234567804',
+    'admin_tf' => '6281112223330',
     'admin' => '6281112223330',
+    'komunikasi_staff' => '6281298765432',
     'tim_komunikasi' => '6281298765432',
+    'rektor_viewer' => '6281311223344',
     'pimpinan_viewer' => '6281311223344'
 ];
 

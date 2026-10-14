@@ -21,8 +21,8 @@ require_once __DIR__ . '/../app/Models/Audit.php';
 // Pastikan DB siap
 Database::getConnection();
 
-// Simulasi autentikasi API: jika ada header X-User-Role atau query user, gunakan itu
-$userKey = $_GET['user'] ?? $_SERVER['HTTP_X_USER_ROLE'] ?? 'admin_tf';
+// Autentikasi API: gunakan header X-User-Role atau parameter user (default: rektor_viewer read-only)
+$userKey = $_GET['user'] ?? $_SERVER['HTTP_X_USER_ROLE'] ?? 'rektor_viewer';
 if (isset(DEFAULT_USERS[$userKey])) {
     Auth::setUser($userKey);
 }

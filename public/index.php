@@ -42,8 +42,14 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// 2. Quick Demo Login (1-Klik untuk Kemudahan Pengujian Role Saat Belum Login)
+// 2. Quick Demo Login (Hanya Aktif Pada Mode Development / Debug)
 if ($action === 'login_quick') {
+    if (APP_ENV === 'production' || !APP_DEBUG) {
+        $_SESSION['flash_error'] = "Akses ditolak: Fitur quick login dinonaktifkan demi keamanan. Silakan masuk menggunakan nama pengguna dan kata sandi resmi.";
+        header("Location: /index.php?page=login");
+        exit;
+    }
+
     // Keamanan Sesi Tunggal: Cegah pengalihan akun tanpa logout
     if (Auth::check()) {
         $_SESSION['flash_error'] = "Sesi aktif sedang digunakan oleh " . Auth::user()['name'] . ". Hanya diperbolehkan 1 akun pengguna dalam satu sesi. Silakan logout terlebih dahulu.";
