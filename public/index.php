@@ -202,6 +202,155 @@ if ($action) {
         exit;
     }
 
+    // 5. Admin AI Engine Management Routes
+    if ($action === 'admin_ai_engine_add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            $_SESSION['flash_error'] = "Akses Ditolak: Hanya Admin yang dapat mengelola AI Engine.";
+            header("Location: /index.php?page=dashboard");
+            exit;
+        }
+
+        $newId = AIService::createEngine($_POST);
+        if ($newId) {
+            Audit::log('AI_ENGINE_CREATE', 'ai_engines', $newId, "Menambahkan AI Engine: " . ($_POST['name'] ?? 'Baru'));
+            $_SESSION['flash_success'] = "AI Engine '" . htmlspecialchars($_POST['name'] ?? '') . "' berhasil ditambahkan.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal menambahkan AI Engine. Silakan periksa parameter input.";
+        }
+        header("Location: /index.php?page=ai_config");
+        exit;
+    }
+
+    if ($action === 'admin_ai_engine_update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            $_SESSION['flash_error'] = "Akses Ditolak: Hanya Admin yang dapat mengelola AI Engine.";
+            header("Location: /index.php?page=dashboard");
+            exit;
+        }
+
+        $id = (int)($_POST['id'] ?? 0);
+        $ok = AIService::updateEngine($id, $_POST);
+        if ($ok) {
+            Audit::log('AI_ENGINE_UPDATE', 'ai_engines', $id, "Memperbarui konfigurasi AI Engine ID {$id}");
+            $_SESSION['flash_success'] = "Konfigurasi AI Engine berhasil diperbarui.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal memperbarui AI Engine.";
+        }
+        header("Location: /index.php?page=ai_config");
+        exit;
+    }
+
+    if ($action === 'admin_ai_engine_toggle') {
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            $_SESSION['flash_error'] = "Akses Ditolak: Hanya Admin yang dapat mengelola AI Engine.";
+            header("Location: /index.php?page=dashboard");
+            exit;
+        }
+
+        $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
+        $ok = AIService::toggleEngine($id);
+        if ($ok) {
+            Audit::log('AI_ENGINE_TOGGLE', 'ai_engines', $id, "Mengubah status aktif AI Engine ID {$id}");
+            $_SESSION['flash_success'] = "Status operasional AI Engine berhasil diubah.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal mengubah status AI Engine.";
+        }
+        header("Location: /index.php?page=ai_config");
+        exit;
+    }
+
+    if ($action === 'admin_ai_engine_priority') {
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            $_SESSION['flash_error'] = "Akses Ditolak: Hanya Admin yang dapat mengelola AI Engine.";
+            header("Location: /index.php?page=dashboard");
+            exit;
+        }
+
+        $id = (int)($_GET['id'] ?? 0);
+        $dir = strtoupper($_GET['dir'] ?? 'UP');
+        $ok = AIService::swapPriority($id, $dir);
+        if ($ok) {
+            Audit::log('AI_ENGINE_PRIORITY', 'ai_engines', $id, "Mengubah urutan prioritas AI Engine ID {$id} ({$dir})");
+            $_SESSION['flash_success'] = "Urutan prioritas eksekusi AI Engine berhasil diperbarui.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal mengubah urutan prioritas AI Engine.";
+        }
+        header("Location: /index.php?page=ai_config");
+        exit;
+    }
+
+    if ($action === 'admin_ai_engine_delete') {
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            $_SESSION['flash_error'] = "Akses Ditolak: Hanya Admin yang dapat mengelola AI Engine.";
+            header("Location: /index.php?page=dashboard");
+            exit;
+        }
+
+        $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
+        if ($id === 4) {
+            $_SESSION['flash_error'] = "Engine UHN Local Synthesizer dilindungi oleh sistem dan tidak dapat dihapus.";
+            header("Location: /index.php?page=ai_config");
+            exit;
+        }
+
+        $ok = AIService::deleteEngine($id);
+        if ($ok) {
+            Audit::log('AI_ENGINE_DELETE', 'ai_engines', $id, "Menghapus AI Engine ID {$id}");
+            $_SESSION['flash_success'] = "AI Engine berhasil dihapus dari sistem.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal menghapus AI Engine.";
+        }
+        header("Location: /index.php?page=ai_config");
+        exit;
+    }
+
+    if ($action === 'admin_ai_engine_test') {
+        header('Content-Type: application/json; charset=utf-8');
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Akses Ditolak: Khusus Administrator.']);
+            exit;
+        }
+
+        $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
+        $res = AIService::testEngine($id);
+        echo json_encode($res);
+        exit;
+    }
+
+    if ($action === 'admin_ai_engine_test_all') {
+        header('Content-Type: application/json; charset=utf-8');
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Akses Ditolak: Khusus Administrator.']);
+            exit;
+        }
+
+        $res = AIService::testAllEngines();
+        echo json_encode(['success' => true, 'results' => $res]);
+        exit;
+    }
+
+    if ($action === 'admin_ai_failover_clear') {
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            $_SESSION['flash_error'] = "Akses Ditolak: Hanya Admin yang dapat mengelola AI Engine.";
+            header("Location: /index.php?page=dashboard");
+            exit;
+        }
+
+        AIService::clearFailoverLogs();
+        Audit::log('AI_FAILOVER_CLEAR', 'ai_failover_logs', null, "Membersihkan riwayat log AI Auto-Failover");
+        $_SESSION['flash_success'] = "Riwayat log AI Auto-Failover berhasil dibersihkan.";
+        header("Location: /index.php?page=ai_config");
+        exit;
+    }
+
     // Simpan Entri Baru
     if ($action === 'entries_store' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $unitCode = $_POST['unit_code'] ?? '';

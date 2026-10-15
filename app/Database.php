@@ -30,7 +30,46 @@ class Database {
                     setting_value TEXT,
                     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
                 );
+
+                CREATE TABLE IF NOT EXISTS ai_engines (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    provider_type TEXT NOT NULL, -- 'GEMINI', 'OPENAI_COMPATIBLE', 'LOCAL_SYNTHESIZER'
+                    model_name TEXT NOT NULL,
+                    api_key TEXT DEFAULT NULL,
+                    endpoint_url TEXT DEFAULT NULL,
+                    is_active INTEGER DEFAULT 1,
+                    priority INTEGER DEFAULT 1,
+                    max_retries INTEGER DEFAULT 2,
+                    timeout_seconds INTEGER DEFAULT 6,
+                    temperature REAL DEFAULT 0.4,
+                    max_tokens INTEGER DEFAULT 400,
+                    last_status TEXT DEFAULT 'UNTESTED', -- 'HEALTHY', 'ERROR', 'UNTESTED', 'DISABLED'
+                    last_latency_ms INTEGER DEFAULT 0,
+                    last_checked_at TEXT DEFAULT NULL,
+                    last_error_message TEXT DEFAULT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS ai_failover_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    request_type TEXT NOT NULL,
+                    failed_engine_id INTEGER,
+                    failed_engine_name TEXT,
+                    error_message TEXT,
+                    retry_count INTEGER DEFAULT 0,
+                    rescued_engine_id INTEGER,
+                    rescued_engine_name TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
             ");
+
+            // Auto-seed AI engines jika belum ada
+            $engineCount = (int)self::$instance->query("SELECT COUNT(*) FROM ai_engines")->fetchColumn();
+            if ($engineCount === 0) {
+                self::seedAiEngines(self::$instance);
+            }
 
             if ($firstInit) {
                 self::initSchema(self::$instance);
@@ -367,5 +406,88 @@ class Database {
         // Audit log inisial
         $db->exec("INSERT INTO audit_logs (user_id, action, table_name, details) VALUES 
             (1, 'SYSTEM_INIT', 'reputation_entries', 'Inisialisasi sistem dan penyemaian 12 data awal untuk 4 modul')");
+    }
+
+    public static function seedAiEngines(PDO $db): void {
+        $defaultKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+        try {
+            $stmt = $db->query("SELECT setting_value FROM system_settings WHERE setting_key = 'gemini_api_key' LIMIT 1");
+            $saved = $stmt->fetchColumn();
+            if (!empty($saved)) {
+                $defaultKey = trim($saved);
+            }
+        } catch (Exception $e) {}
+
+        $insert = $db->prepare("
+            INSERT INTO ai_engines (id, name, provider_type, model_name, api_key, endpoint_url, is_active, priority, max_retries, timeout_seconds, temperature, max_tokens, last_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        $engines = [
+            [
+                1,
+                'Google Gemini 1.5 Flash (Engine Utama)',
+                'GEMINI',
+                'gemini-1.5-flash',
+                $defaultKey,
+                'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+                1,
+                1,
+                2,
+                6,
+                0.4,
+                400,
+                'UNTESTED'
+            ],
+            [
+                2,
+                'Google Gemini 2.0 Flash (Cadangan Cloud 1)',
+                'GEMINI',
+                'gemini-2.0-flash',
+                $defaultKey,
+                'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+                1,
+                2,
+                2,
+                6,
+                0.4,
+                400,
+                'UNTESTED'
+            ],
+            [
+                3,
+                'DeepSeek / OpenAI Compatible (Cadangan Cloud 2)',
+                'OPENAI_COMPATIBLE',
+                'deepseek-chat',
+                '',
+                'https://api.deepseek.com/v1/chat/completions',
+                0,
+                3,
+                2,
+                8,
+                0.4,
+                400,
+                'DISABLED'
+            ],
+            [
+                4,
+                'UHN Neural Synthesizer (Cadangan Final Offline)',
+                'LOCAL_SYNTHESIZER',
+                'uhn-neural-nlp-v2',
+                '',
+                'local://synthesizer',
+                1,
+                99,
+                1,
+                1,
+                0.0,
+                400,
+                'HEALTHY'
+            ]
+        ];
+
+        foreach ($engines as $eng) {
+            $insert->execute($eng);
+        }
     }
 }

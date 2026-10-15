@@ -178,3 +178,37 @@ CREATE TABLE reminder_notifications (
     recipient_email VARCHAR(100),
     status VARCHAR(20) DEFAULT 'SENT' -- 'SENT', 'FAILED'
 );
+
+-- 11. MANAJEMEN MULTI-AI ENGINE & AUTO-FAILOVER
+CREATE TABLE ai_engines (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    provider_type VARCHAR(50) NOT NULL, -- 'GEMINI', 'OPENAI_COMPATIBLE', 'LOCAL_SYNTHESIZER'
+    model_name VARCHAR(100) NOT NULL,
+    api_key VARCHAR(255),
+    endpoint_url TEXT,
+    is_active SMALLINT DEFAULT 1,
+    priority INTEGER DEFAULT 1,
+    max_retries INTEGER DEFAULT 2,
+    timeout_seconds INTEGER DEFAULT 6,
+    temperature NUMERIC(3, 2) DEFAULT 0.40,
+    max_tokens INTEGER DEFAULT 400,
+    last_status VARCHAR(30) DEFAULT 'UNTESTED', -- 'HEALTHY', 'ERROR', 'UNTESTED', 'DISABLED'
+    last_latency_ms INTEGER DEFAULT 0,
+    last_checked_at TIMESTAMP,
+    last_error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ai_failover_logs (
+    id BIGSERIAL PRIMARY KEY,
+    request_type VARCHAR(50) NOT NULL,
+    failed_engine_id BIGINT,
+    failed_engine_name VARCHAR(150),
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    rescued_engine_id BIGINT,
+    rescued_engine_name VARCHAR(150),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

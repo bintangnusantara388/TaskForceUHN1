@@ -316,3 +316,13 @@ VALUES (
     'STUDI_LANJUT', 'University of Oxford (United Kingdom)', 'Awardee Master of Public Policy (MPP)',
     'Dukungan rekomendasi dosen serta kultur berpikir kritis di kampus menjadi pemantik utama keberhasilan seleksi wawancara beasiswa luar negeri.'
 );
+
+-- =============================================================================
+-- 5. AI ENGINES & AUTO-FAILOVER REGISTRY
+-- =============================================================================
+INSERT INTO ai_engines (id, name, provider_type, model_name, api_key, endpoint_url, is_active, priority, max_retries, timeout_seconds, temperature, max_tokens, last_status) VALUES
+(1, 'Google Gemini 1.5 Flash (Engine Utama)', 'GEMINI', 'gemini-1.5-flash', '', 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent', 1, 1, 2, 6, 0.40, 400, 'UNTESTED'),
+(2, 'Google Gemini 2.0 Flash (Cadangan Cloud 1)', 'GEMINI', 'gemini-2.0-flash', '', 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent', 1, 2, 2, 6, 0.40, 400, 'UNTESTED'),
+(3, 'DeepSeek / OpenAI Compatible (Cadangan Cloud 2)', 'OPENAI_COMPATIBLE', 'deepseek-chat', '', 'https://api.deepseek.com/v1/chat/completions', 0, 3, 2, 8, 0.40, 400, 'DISABLED'),
+(4, 'UHN Neural Synthesizer (Cadangan Final Offline)', 'LOCAL_SYNTHESIZER', 'uhn-neural-nlp-v2', '', 'local://synthesizer', 1, 99, 1, 1, 0.00, 400, 'HEALTHY');
+
