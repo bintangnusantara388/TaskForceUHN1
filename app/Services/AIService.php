@@ -246,6 +246,11 @@ ATURAN KETAT:
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
             $resp = curl_exec($ch);
+            if ($resp === false && in_array(curl_errno($ch), [60, 77], true)) {
+                // Retry jika SSL cert bundle lokal bermasalah pada environment tertentu
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                $resp = curl_exec($ch);
+            }
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             @curl_close($ch);
 
@@ -454,6 +459,10 @@ FORMAT OUTPUT HARUS BERUPA JSON VALID PERSIS DENGAN STRUKTUR BERIKUT (tanpa pemb
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
         $resp = curl_exec($ch);
+        if ($resp === false && in_array(curl_errno($ch), [60, 77], true)) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $resp = curl_exec($ch);
+        }
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         @curl_close($ch);
 
@@ -677,6 +686,10 @@ FORMAT OUTPUT HARUS BERUPA JSON VALID PERSIS DENGAN STRUKTUR BERIKUT (tanpa pemb
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
         $resp = curl_exec($ch);
+        if ($resp === false && in_array(curl_errno($ch), [60, 77], true)) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $resp = curl_exec($ch);
+        }
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
         $latency = round((microtime(true) - $start) * 1000);
